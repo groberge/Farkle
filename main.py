@@ -23,16 +23,20 @@ def player_test(name):
 
 
 def get_num_players():
-    num_players = int(input("How many players will be playing?"))
+    index = 0
+
+    try:
+        num_players = int(input("How many players will be playing?"))
+    except ValueError:
+        num_players = int(input("Invalid input.  Please choose 2 - 5 players.\n How many players will be playing?"))
 
     while num_players < 2 or num_players > 5:
-        print("Invalid input.  Please choose 2 - 5 players")
-        num_players = input("How many players will be playing?")
+        num_players = int(input("Invalid input.  Please choose 2 - 5 players.\n How many players will be playing?"))
 
     players = []
 
-    for i in range(num_players):
-        name = input("What is player" + str(i + 1) + "'s name?")
+    for index in range(num_players):
+        name = input("What is player" + str(index + 1) + "'s name?")
         players.append(Player(name))
 
     # print(players)
@@ -54,6 +58,7 @@ def take_turn(player):
     num_dice = 6
     roll = 'r'
     roll_score = 0
+    this_turn_score = 0
 
     # Used to test without causing infinite loop
     # turns = 2
@@ -62,8 +67,8 @@ def take_turn(player):
 
         roll = input("Press r to keep rolling, press q to quit")
 
-        if roll == 'q' and (player.player_score + roll_score < 1000 or num_dice == 0):
-            if player.player_score + roll_score < 1000:
+        if roll == 'q' or ((player.player_score + this_turn_score < 1000) or num_dice == 0):
+            if player.player_score + this_turn_score < 1000:
                 print("Score is less than 1000.  Must continue rolling.")
             else:
                 print("All dice have been saved.  Must continue rolling.")
@@ -74,38 +79,112 @@ def take_turn(player):
             turn_over = True
             roll_over = True
             print("Your turn is over")
-            return roll_score
+            return this_turn_score
         elif roll == 'r' and not roll_over:
             dice = roll_dice(num_dice)
             print(dice)
-            score(dice)
+            roll_score, num_dice = scoring(dice, num_dice)
+            if not roll_score:
+                roll_over = True
+                turn_over = True
+                this_turn_score = 0
+            else:
+                this_turn_score += roll_score
+                print(player.player_name + "'s current roll score is " + str(this_turn_score))
+                print("If you stopped now, your total score would be " + str(player.player_score + this_turn_score))
             # num_dice -= 1
             # player needs to continue rolling if all dice are saved or score is less than 1000
 
+    return this_turn_score
 
-def score(dice):
+
+# This function calculates the score for a roll
+# It takes in the list of dice and returns the score
+def scoring(dice, num_dice):
     triplet = 0
-    scoring = False
+    ones = 0
+    fives = 0
+    scoring_dice = False
+    score = 0
+    keep_dice = 'n'
+
+    # dice tests
+    # dice = Counter({2: 4, 1: 1, 5: 1})
+    # dice = Counter({1: 6})
+    # dice = Counter({5: 5, 6: 1})
 
     for i in range(7):
         if dice[i] > 0:
             print("You have " + str(dice[i]) + " " + str(i) + "'s")
     print("\n")
 
-    for number, amount in dice.most_common():
-        if amount > 0:
-            if amount >= 3:
-                print("Scoring dice:\n")
-                print("You have " + str(amount) + " " + str(number) + "'s")
-                del dice[number]
-                triplet = number
-                scoring = True
-            elif number == 1 or number == 5:
-                if triplet == 0:
-                    print("Scoring dice:\n")
-                    scoring = True
+    print("Scoring dice:")
 
-                print("You have " + str(amount) + " " + str(number) + "'s")
+    for number, amount in dice.most_common():
+        if amount >= 3:
+            print("You have a triplet of " + str(number) + "s")
+            if amount > 3:
+                if number == 1:
+                    print("You have " + str(amount) + " " + str(number) + "s")
+                    ones = amount - 3
+                if number == 5:
+                    print("You have " + str(amount) + " " + str(number) + "s")
+                    fives = amount
+            del dice[number]
+            triplet = number
+            scoring_dice = True
+        elif number == 1:
+            if triplet == 1:
+                ones = amount - 3
+            else:
+                ones = amount
+            print("You have " + str(ones) + " " + str(number) + "'s")
+            scoring_dice = True
+        elif number == 5:
+            if triplet == 5:
+                fives = amount - 3
+            else:
+                fives = amount
+            print("You have " + str(fives) + " " + str(number) + "'s")
+            scoring_dice = True
+
+    if not scoring_dice:
+        print("You have no scoring dice.  Your turn is over")
+        score = 0
+        return score, num_dice
+    else:
+        if triplet:
+            keep_dice = input("Would you like to keep your triplet of " + str(triplet) + "s? y or n")
+            if keep_dice == 'y':
+                score += triplet_score(triplet)
+                num_dice -= 3
+                print("You now have " + str(num_dice) + " dice remaining")
+            keep_dice = 'n'
+        if ones:
+            keep_dice = input("Would you like to keep your 1s? y or n")
+            if keep_dice == 'y':
+                score += ones * 100
+                num_dice -= ones
+                print("You now have " + str(num_dice) + " dice remaining")
+            keep_dice = 'n'
+        if fives:
+            keep_dice = input("Would you like to keep your 5s? y or n")
+            if keep_dice == 'y':
+                score += fives * 50
+                num_dice -= fives
+                print("You now have " + str(num_dice) + " dice remaining")
+            keep_dice = 'n'
+
+    return score, num_dice
+
+
+# Takes an int and returns the triplet score
+def triplet_score(triplet):
+    if triplet == 1:
+        triplet_value = 1000
+    else:
+        triplet_value = triplet * 100
+    return triplet_value
 
 
 # Press the green button in the gutter to run the script.
@@ -123,8 +202,11 @@ if __name__ == '__main__':
     while not game_over:
         if not game_players[player_number].winning_player:
             print("\n" + game_players[player_number].player_name + "'s turn\n\n")
-            roll_score = take_turn(game_players[player_number])
-            game_players[player_number].player_score = game_players[player_number].player_score + roll_score
+            turn_score = take_turn(game_players[player_number])
+            game_players[player_number].player_score = game_players[player_number].player_score + turn_score
+            for i in range(len(game_players)):
+                print(game_players[i].player_name + " has " + str(game_players[i].player_score)
+                      + " points")
             player_number += 1
 
             if player_number > len(game_players) - 1:
