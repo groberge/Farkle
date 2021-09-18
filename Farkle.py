@@ -202,7 +202,7 @@ def calculate_winner(players):
     for i in range(1 - (len(players))):
         if players[i].player_score > winner.player_score:
             winner = players[i]
-    return winner
+    print("Congratulations!! " + winner.player_name + " is the winner!!!")
 
 
 if __name__ == '__main__':
@@ -237,5 +237,5 @@ if __name__ == '__main__':
         else:
             game_over = True
 
+    # All players have had their final turn after a player reached 10000 points so calculate winner
     game_winner = calculate_winner(game_players)
-    print("Congratulations!! " + game_winner.player_name + " is the winner!!!")
