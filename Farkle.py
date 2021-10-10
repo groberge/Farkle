@@ -11,10 +11,14 @@ class Player:
     player_score: int = 0
 
 
-# This function prompts for the number of players and the name of each player
-# The output is a list of players
 def get_num_players():
-    index = 0
+    """Prompts for the number of players and the name of each player
+
+    :param:
+    None
+    :return:
+    players (list): list of the players in the game
+    """
 
     try:
         num_players = int(input("How many players will be playing?\n"))
@@ -33,20 +37,40 @@ def get_num_players():
     return players
 
 
-# This function takes an int value for number of dice and generates a random value between 1 and 6
-# The output is a counter of dice with those values (using the collections module)
 def roll_dice(number_of_dice):
-    dice = Counter([random.randint(1, 6) for i in range(0, number_of_dice)])
+    """Rolls the dice and adds the values to a counter
+
+    Random is used to generate a random value between 1 and 6 for each die
+    Counter is then used to count the number of dice with the same value and store each element
+    as a dictionary key, which is then returned to the program
+
+    :param:
+    number_of_dice (int): the number of dice being rolled
+    :return:
+    dice (counter): counter of dice with the values that were rolled
+    """
+
+    dice = Counter([random.randint(1, 6) for die in range(0, number_of_dice)])
     return dice
 
 
-# This function takes a Player and processes that player's turn for them
-# The output is an int value for this_turn_score
 def take_turn(player):
+    """ Takes a player and processes that player's turn for them
+
+    Player is prompted whether to continue rolling or quit based on the rules of Farkle
+    Uses roll_dice() and scoring() functions and displays current roll score
+    and current game score for each roll
+    Calculates the score for the player's complete turn
+
+    :param:
+    player (Player): the current player taking their turn
+    :return:
+    this_turn_score (int): the score for this turn
+    """
+
     turn_over = False
     roll_over = False
     num_dice = 6
-    roll_score = 0
     this_turn_score = 0
 
     while not turn_over:
@@ -68,8 +92,6 @@ def take_turn(player):
             roll = 'r'
 
         if roll == 'q':
-            turn_over = True
-            roll_over = True
             print("Your turn is over\n")
             return this_turn_score
         elif roll == 'r' and not roll_over:
@@ -88,23 +110,35 @@ def take_turn(player):
     return this_turn_score
 
 
-# This function takes the counter and the number of dice, calculates the score for a roll and tracks number of dice
-# that are left.
-# Output is the score for the roll and the number of dice that haven't been saved
 def scoring(dice, num_dice):
+    """ Calculates score for a roll and tracks number of dice left to roll
+
+    Uses the most_common() method to find any triplets and also looks for the number of dice with a value of 1 or 5
+    for other scoring values.
+    User is prompted whether to save each scoring dice and score is calculated based on input
+    Number of dice remaining is decremented as dice are saved.
+
+    :param:
+    dice (counter): counter of dice to evaluate
+    num_dice (int): number of dice to evaluate
+    :return:
+    score (int): value of the score for this roll
+    num_dice (int): number of dice remaining for next roll
+    """
+
     triplet = 0
     double_triplet = 0  # this is for the case of six of the same value
+    second_triplet = 0  # for the case of two different triplets
     # Scoring values
     ones = 0
     fives = 0
 
     scoring_dice = False
     score = 0
-    i = 0
 
-    for i in range(7):
-        if dice[i] > 0:
-            print("You have " + str(dice[i]) + " " + str(i) + "'s")
+    for die in range(7):
+        if dice[die] > 0:
+            print("You have " + str(dice[die]) + " " + str(die) + "'s")
     print("\n")
 
     print("Scoring dice:\n")
@@ -129,7 +163,12 @@ def scoring(dice, num_dice):
 
             # We don't want to recount the triplet if they are 1s or 5s
             del dice[number]
-            triplet = number
+
+            # Check if there are two different triplets
+            if triplet == 0:
+                triplet = number
+            else:
+                second_triplet = number
             scoring_dice = True
         elif number == 1:
             ones = amount
@@ -161,7 +200,16 @@ def scoring(dice, num_dice):
                     score += triplet_score(triplet)
                     num_dice -= 3
                     print("You now have " + str(num_dice) + " dice remaining\n")
-                keep_dice = 'n'
+
+                if second_triplet:
+                    keep_dice = input("\nWould you like to keep your triplet of " + str(second_triplet) + "s? y or n\n")
+                    while keep_dice not in ('y', 'n'):
+                        keep_dice = input("Please type either y or n.  Would you like to keep your triplet of "
+                                          + str(second_triplet) + "s? y or n\n")
+                    if keep_dice == 'y':
+                        score += triplet_score(second_triplet)
+                        num_dice -= 3
+                        print("You now have " + str(num_dice) + " dice remaining\n")
             if ones:
                 keep_dice = input("\nWould you like to keep your 1s? y or n\n")
                 while keep_dice not in ('y', 'n'):
@@ -170,7 +218,6 @@ def scoring(dice, num_dice):
                     score += ones * 100
                     num_dice -= ones
                     print("You now have " + str(num_dice) + " dice remaining\n")
-                keep_dice = 'n'
             if fives:
                 keep_dice = input("\nWould you like to keep your 5s? y or n\n")
                 while keep_dice not in ('y', 'n'):
@@ -179,14 +226,22 @@ def scoring(dice, num_dice):
                     score += fives * 50
                     num_dice -= fives
                     print("You now have " + str(num_dice) + " dice remaining\n")
-                keep_dice = 'n'
 
     return score, num_dice
 
 
-# Takes the number of the dice in the triplet
-# Output is the triplet score for that number
 def triplet_score(triplet):
+    """ Calculates the scoring value of a triplet of dice
+
+    Score is calculated based on the rules of Farkle where three 1s equals 1000 points.
+    Any other triplet equals 100 * number
+
+    :param:
+    triplet (int): number of the die with three of a kind
+    :return:
+    triplet_value (int): scoring value of the three of a kind
+    """
+
     if triplet == 1:
         triplet_value = 1000
     else:
@@ -194,15 +249,25 @@ def triplet_score(triplet):
     return triplet_value
 
 
-# Takes the list of Players and finds the one with the highest score
-# Outputs the winning Player
 def calculate_winner(players):
+    """ Finds the winner from a list of players
+
+    Iterates through a list of players to find the one with the highest score
+
+    :param:
+    players (list): list of players to evaluate
+    :return:
+    none
+    """
+
     winner = players[0]
 
-    for i in range(1 - (len(players))):
-        if players[i].player_score > winner.player_score:
-            winner = players[i]
+    for player in players:
+        if player.player_score > winner.player_score:
+            winner = player
     print("Congratulations!! " + winner.player_name + " is the winner!!!")
+
+    return 0
 
 
 if __name__ == '__main__':
@@ -218,6 +283,7 @@ if __name__ == '__main__':
         if not game_players[player_number].reached_10000:
             print("\n" + game_players[player_number].player_name + "'s turn\n")
             turn_score = take_turn(game_players[player_number])
+
             # Add the current turn's score to the players game score
             game_players[player_number].player_score = game_players[player_number].player_score + turn_score
 
@@ -225,7 +291,7 @@ if __name__ == '__main__':
                 print(game_players[i].player_name + " has " + str(game_players[i].player_score)
                       + " points")
 
-            if game_players[player_number].player_score >= 10000 and reached_10000 == False:
+            if game_players[player_number].player_score >= 10000 and not game_players[player_number].reached_10000:
                 game_players[player_number].reached_10000 = True
                 reached_10000 = True
                 print(game_players[player_number].player_name + " has reached 10000. All other players take their "
